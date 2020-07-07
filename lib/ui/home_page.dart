@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:com/ui/gif_page.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -18,11 +19,11 @@ class _HomePageState extends State<HomePage> {
     if (_search == null) {
       print("------search null ok");
       response = await http.get(
-          "https://api.giphy.com/v1/gifs/trending?api_key=h1GBl4kHXBOqKc7fMcKdhGGLv9ZUI9n4&limit=25&rating=g");
+          "https://api.giphy.com/v1/gifs/trending?api_key=h1GBl4kHXBOqKc7fMcKdhGGLv9ZUI9n4&limit=20&rating=g");
     } else {
       print("------search not null ok");
       response = await http.get(
-          "https://api.giphy.com/v1/gifs/search?api_key=h1GBl4kHXBOqKc7fMcKdhGGLv9ZUI9n4&q=$_search&limit=25&offset=$_offset&rating=g&lang=pt");
+          "https://api.giphy.com/v1/gifs/search?api_key=h1GBl4kHXBOqKc7fMcKdhGGLv9ZUI9n4&q=$_search&limit=19&offset=$_offset&rating=g&lang=pt");
     }
 
     return json.decode(response.body);
@@ -58,6 +59,12 @@ class _HomePageState extends State<HomePage> {
                   border: OutlineInputBorder()),
               style: TextStyle(color: Colors.white, fontSize: 18),
               textAlign: TextAlign.center,
+              onSubmitted: (text) {
+                setState(() {
+                  _search = text;
+                  _offset = 0;
+                });
+              },
             ),
           ),
           Expanded(
@@ -70,6 +77,7 @@ class _HomePageState extends State<HomePage> {
                     return Container(
                       width: 200,
                       height: 200,
+                      alignment: Alignment.center,
                       child: CircularProgressIndicator(
                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                         strokeWidth: 5,
@@ -89,6 +97,14 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  int _getCount(List data) {
+    if (_search == null) {
+      return data.length;
+    } else {
+      return data.length + 1;
+    }
+  }
+
   Widget _createGifTable(BuildContext context, AsyncSnapshot snapshot) {
     return GridView.builder(
         padding: EdgeInsets.all(10),
@@ -97,15 +113,47 @@ class _HomePageState extends State<HomePage> {
           crossAxisSpacing: 10,
           mainAxisSpacing: 10,
         ),
-        itemCount: 4,
+        itemCount: _getCount(snapshot.data["data"]),
         itemBuilder: (context, index) {
-          return GestureDetector(
-            child: Image.network(
-              snapshot.data["data"][index]["images"]["fixed_width"]["url"],
-              height: 300,
-              fit: BoxFit.cover,
-            ),
-          );
+          if (_search == null || index < snapshot.data["data"].length)
+            return GestureDetector(
+              child: Image.network(
+                snapshot.data["data"][index]["images"]["fixed_width"]["url"],
+                height: 300,
+                fit: BoxFit.cover,
+              ),
+              onTap: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                        builder: (context) =>
+                            GifPage(snapshot. data["data"][index])));
+              },
+            );
+          else
+            return Container(
+              child: GestureDetector(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: <Widget>[
+                    Icon(
+                      Icons.add,
+                      color: Colors.white,
+                      size: 70,
+                    ),
+                    Text(
+                      "Carregar mais...",
+                      style: TextStyle(color: Colors.white, fontSize: 22),
+                    )
+                  ],
+                ),
+                onTap: () {
+                  setState(() {
+                    _offset += 19;
+                  });
+                },
+              ),
+            );
         });
   }
 }
